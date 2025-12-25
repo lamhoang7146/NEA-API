@@ -3,10 +3,10 @@ name: NEA API CI/CD Pipeline
 on:
   push:
     branches:
-      - main
+      - dev
   pull_request:
     branches:
-      - main
+      - dev
 
 jobs:
   build:
@@ -33,7 +33,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Generate the schema for postgres DB
-        run: pnpm pg:generate
+        run: pnpm pg:generate:dev
 
       - name: Lint the application
         run: pnpm lint
@@ -71,11 +71,11 @@ jobs:
         run: |
           ssh -T -o StrictHostKeyChecking=no ssh.enderio.site << 'EOF'
           cd ${{ secrets.PROJECT_DIR }} &&
-          git fetch origin main &&
-          git reset --hard origin/main &&
+          git fetch origin dev &&
+          git reset --hard origin/dev &&
           make down-r &&
           make pull || true &&
-          make rebuild-main &&
+          make rebuild-dev &&
           make image-prune &&
           make volume-prune &&
           EOF
