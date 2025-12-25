@@ -83,8 +83,8 @@ import * as Joi from 'joi';
         JWT_SECRET: Joi.string().required(),
         JWT_EXPIRES_IN: Joi.string().default('24h'),
 
-        GOOGLE_API_KEY: Joi.string().required(),
-        GOOGLE_API_VERSION: Joi.string().default('gemini-2.5-flash'),
+        MODEL_ID: Joi.string().required(),
+        MODEL_VERSION: Joi.string().required(),
       }),
       validationOptions: {
         allowUnknown: true,
