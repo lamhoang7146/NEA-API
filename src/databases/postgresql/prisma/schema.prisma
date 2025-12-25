@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  LECTURER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+  BLOCKED
+}
+
+model User {
+  id         String     @id @default(uuid())
+  avatar     String?
+  name       String
+  email      String     @unique
+  bio        String?
+  password   String
+  isVerified Boolean    @default(false) @map("is_verified")
+  status     UserStatus @default(PENDING) @map("status")
+  role       Role       @default(STUDENT)
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  @@map("user")
+}

@@ -1,0 +1,24 @@
+{
+  "name": "databases/postgresql",
+  "version": "1.0.0",
+  "description": "PostgreSQL package for API",
+  "main": "index.js",
+  "scripts": {
+    "pg:migrate": "dotenv -e ../../../.env -- prisma migrate dev",
+    "pg:generate": "dotenv -e ../../../.env -- prisma generate",
+    "pg:push": "dotenv -e ../../../.env -- prisma db push",
+    "pg:studio": "dotenv -e ../../../.env -- prisma studio",
+    "pg:reset": "dotenv -e ../../../.env -- prisma migrate reset",
+    "pg:migrate:dev": "dotenv -e ../../../.env.dev -- prisma migrate dev",
+    "pg:generate:dev": "dotenv -e ../../../.env.dev -- prisma generate",
+    "pg:push:dev": "dotenv -e ../../../.env.dev -- prisma db push",
+    "pg:studio:dev": "dotenv -e ../../../.env.dev -- prisma studio",
+    "pg:reset:dev": "dotenv -e ../../../.env.dev -- prisma migrate reset"
+  },
+  "keywords": [],
+  "author": "Lam Hoang",
+  "license": "ISC",
+  "packageManager": "pnpm@10.18.3",
+  "dependencies": {},
+  "devDependencies": {}
+}

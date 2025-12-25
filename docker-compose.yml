@@ -1,0 +1,157 @@
+services:
+  api:
+    container_name: api-${APP_ENV}
+    profiles: [production]
+    environment:
+      - APP_ENV=${APP_ENV}
+    build:
+      context: .
+      dockerfile: ./docker/dockerFile
+    ports:
+      - ${APP_PORT}:${APP_PORT}
+    restart: unless-stopped
+    command: >
+      sh -c "
+        corepack pnpm pg:setup &&
+        corepack pnpm dev
+      "
+    develop:
+      watch:
+        - path: .
+          action: sync
+          target: /app
+        - path: /package.json
+          action: rebuild
+    depends_on:
+      - minio
+      - kafka
+      - pg
+      - redis
+    networks:
+      - nova-network
+
+  api-dev:
+    container_name: api-${APP_ENV}
+    profiles: [development]
+    environment:
+      - APP_ENV=${APP_ENV}
+    build:
+      context: .
+      dockerfile: ./docker/dockerFile
+    ports:
+      - ${APP_PORT}:${APP_PORT}
+    restart: unless-stopped
+    command: >
+      sh -c "
+        corepack pnpm pg:setup:dev &&
+        corepack pnpm dev
+      "
+    develop:
+      watch:
+        - path: .
+          action: sync
+          target: /app
+        - path: /package.json
+          action: rebuild
+    depends_on:
+      - minio
+      - pg
+      - redis
+    networks:
+      - nova-network
+
+  kafka:
+    container_name: kafka
+    image: apache/kafka:${KAFKA_VERSION:-latest}
+    profiles: [production]
+    ports:
+      - "${KAFKA_PORT:-9092}:9092"
+      - "${KAFKA_CONTROLLER_PORT:-9093}:9093"
+    environment:
+      KAFKA_NODE_ID: ${KAFKA_NODE_ID:-1}
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      KAFKA_CONTROLLER_QUORUM_VOTERS: ${KAFKA_NODE_ID:-1}@kafka:${KAFKA_CONTROLLER_PORT:-9093}
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,INTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${KAFKA_EXTERNAL_HOST:-localhost}:${KAFKA_PORT:-9092},INTERNAL://${KAFKA_INTERNAL_HOST:-kafka}:9094
+
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKAJS_NO_PARTITIONER_WARNING: 1
+    volumes:
+      - kafka-data:/kafka_data
+    networks:
+      - nova-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-cluster-ui
+    profiles: [production]
+    ports:
+      - ${KAFKA_UI_PORT:-8080}:8080
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9094
+    depends_on:
+      - kafka
+    networks:
+      - nova-network
+
+  pg:
+    container_name: pg
+    image: postgres:${DB_POSTGRESQL_VERSION:-17-alpine}
+    environment:
+      - POSTGRES_USER=${DB_POSTGRESQL_USERNAME:-username}
+      - POSTGRES_PASSWORD=${DB_POSTGRESQL_PASSWORD:-password}
+      - POSTGRES_DB=${DB_POSTGRESQL_DATABASE:-NEA_PG}
+    ports:
+      - ${DB_POSTGRESQL_PORT:-5432}:5432
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    networks:
+      - nova-network
+
+  redis:
+    container_name: redis
+    image: redis:${REDIS_VERSION:-8.0-alpine}
+    ports:
+      - ${REDIS_PORT:-6379}:6379
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-password}
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-password}"]
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - nova-network
+
+  minio:
+    container_name: minio
+    image: minio/minio:${MINIO_VERSION:-latest}
+    restart: unless-stopped
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - nova-network
+
+volumes:
+  pg-data:
+  redis-data:
+  minio-data:
+  kafka-data:
+
+networks:
+  nova-network:
+    driver: bridge

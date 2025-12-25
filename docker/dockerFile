@@ -1,0 +1,12 @@
+FROM node:22-alpine
+
+RUN corepack enable && corepack prepare pnpm@10 --activate
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY src/databases ./src/databases
+
+RUN pnpm install --frozen-lockfile
+
+COPY . .
